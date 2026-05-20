@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Follower Alert - synthdog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Orbitron:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg: transparent;
+      --panel: rgba(8, 10, 20, 0.74);
+      --panel-2: rgba(20, 24, 42, 0.56);
+      --line: rgba(141, 255, 214, 0.22);
+      --text: #ecfff8;
+      --muted: #9ec8bb;
+      --cyan: #71ffe2;
+      --mint: #98ff8a;
+      --lime: #d9ff59;
+      --violet: #a98bff;
+      --glow: 0 0 20px rgba(113,255,226,.35), 0 0 48px rgba(169,139,255,.2);
+      --radius: 28px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      font-family: "Space Grotesk", sans-serif;
+      color: var(--text);
+    }
+
+    .alert-wrap {
+      position: relative;
+      width: min(980px, 92vw);
+      aspect-ratio: 16 / 7;
+      display: grid;
+      place-items: center;
+      isolation: isolate;
+      filter: drop-shadow(0 16px 30px rgba(0,0,0,.28));
+    }
+
+    .ambient {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .ring, .pulse, .scan, .grid, .grain, .orbs {
+      position: absolute;
+      inset: 0;
+    }
+
+    .grid {
+      background:
+        linear-gradient(rgba(113,255,226,.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(113,255,226,.08) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: radial-gradient(circle at center, black 35%, transparent 90%);
+      opacity: .34;
+      transform: perspective(800px) rotateX(68deg) translateY(30%);
+      animation: gridDrift 8s linear infinite;
+    }
+
+    .grain {
+      opacity: .08;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(255,255,255,.6) 0 1px, transparent 1.5px),
+        radial-gradient(circle at 80% 60%, rgba(255,255,255,.55) 0 1px, transparent 1.5px),
+        radial-gradient(circle at 35% 70%, rgba(255,255,255,.4) 0 1px, transparent 1.5px),
+        radial-gradient(circle at 62% 24%, rgba(255,255,255,.45) 0 1px, transparent 1.5px);
+      background-size: 170px 170px, 210px 210px, 190px 190px, 220px 220px;
+      animation: grainShift 1.4s steps(2) infinite;
+    }
+
+    .orbs::before,
+    .orbs::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(28px);
+      opacity: .55;
+    }
+
+    .orbs::before {
+      width: 220px;
+      height: 220px;
+      left: 10%;
+      top: 16%;
+      background: radial-gradient(circle, rgba(113,255,226,.45), transparent 70%);
+      animation: orbFloat 5s ease-in-out infinite;
+    }
+
+    .orbs::after {
+      width: 260px;
+      height: 260px;
+      right: 8%;
+      bottom: 10%;
+      background: radial-gradient(circle, rgba(169,139,255,.38), transparent 72%);
+      animation: orbFloat 6.2s ease-in-out infinite reverse;
+    }
+
+    .pulse::before,
+    .pulse::after {
+      content: "";
+      position: absolute;
+      inset: 18% 11%;
+      border-radius: 999px;
+      border: 1px solid rgba(113,255,226,.18);
+      box-shadow: 0 0 24px rgba(113,255,226,.12);
+      animation: pulseOut 2.4s ease-out infinite;
+    }
+
+    .pulse::after {
+      animation-delay: 1.1s;
+      border-color: rgba(217,255,89,.16);
+    }
+
+    .scan {
+      overflow: hidden;
+      border-radius: 40px;
+    }
+
+    .scan::before {
+      content: "";
+      position: absolute;
+      inset: -20% -10%;
+      background: linear-gradient(
+        110deg,
+        transparent 0%,
+        transparent 42%,
+        rgba(255,255,255,.05) 48%,
+        rgba(113,255,226,.22) 50%,
+        rgba(255,255,255,.05) 52%,
+        transparent 58%,
+        transparent 100%
+      );
+      transform: translateX(-120%);
+      animation: scanSweep 2.8s cubic-bezier(.22,.61,.36,1) infinite;
+    }
+
+    .alert {
+      position: relative;
+      width: min(920px, 88vw);
+      min-height: 280px;
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 22px;
+      align-items: center;
+      padding: 24px 28px 24px 22px;
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(13,16,30,.88), rgba(7,10,18,.78)),
+        radial-gradient(circle at top left, rgba(113,255,226,.08), transparent 35%);
+      border: 1px solid rgba(113,255,226,.18);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.06),
+        inset 0 0 0 1px rgba(255,255,255,.02),
+        0 20px 80px rgba(0,0,0,.42),
+        0 0 0 1px rgba(169,139,255,.06);
+      backdrop-filter: blur(12px) saturate(130%);
+      overflow: hidden;
+    }
+
+    .alert::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(113,255,226,.06), transparent 20% 80%, rgba(169,139,255,.06)),
+        repeating-linear-gradient(
+          180deg,
+          rgba(255,255,255,.025) 0 2px,
+          transparent 2px 6px
+        );
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .left {
+      position: relative;
+      height: 100%;
+      min-height: 230px;
+      display: grid;
+      place-items: center;
+    }
+
+    .avatar-core {
+      position: relative;
+      width: 142px;
+      height: 142px;
+      border-radius: 30px;
+      background:
+        radial-gradient(circle at 35% 30%, rgba(255,255,255,.14), transparent 25%),
+        linear-gradient(145deg, rgba(113,255,226,.18), rgba(169,139,255,.12)),
+        rgba(12, 18, 28, .92);
+      border: 1px solid rgba(113,255,226,.24);
+      box-shadow: var(--glow), inset 0 0 24px rgba(255,255,255,.04);
+      display: grid;
+      place-items: center;
+      transform: rotate(-6deg);
+      animation: badgeIn .9s cubic-bezier(.2,.8,.2,1) both, badgeFloat 3s ease-in-out infinite 1s;
+    }
+
+    .avatar-core::before,
+    .avatar-core::after {
+      content: "";
+      position: absolute;
+      inset: -10px;
+      border-radius: 36px;
+      border: 1px solid rgba(113,255,226,.16);
+      transform: rotate(8deg);
+    }
+
+    .avatar-core::after {
+      inset: -20px;
+      border-color: rgba(217,255,89,.1);
+      transform: rotate(-10deg);
+    }
+
+    .dog-icon {
+      width: 88px;
+      height: 88px;
+      display: block;
+      filter: drop-shadow(0 0 10px rgba(113,255,226,.3));
+    }
+
+    .right {
+      position: relative;
+      display: grid;
+      gap: 10px;
+      z-index: 1;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.82rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--mint);
+      opacity: 0;
+      animation: rise .6s ease forwards .15s;
+    }
+
+    .kicker .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--lime);
+      box-shadow: 0 0 12px rgba(217,255,89,.8);
+      animation: blink 1s ease-in-out infinite;
+    }
+
+    .title {
+      margin: 0;
+      font-family: "Orbitron", sans-serif;
+      font-size: clamp(2.1rem, 4.5vw, 4.4rem);
+      line-height: .95;
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+      opacity: 0;
+      animation: rise .8s cubic-bezier(.2,.8,.2,1) forwards .3s;
+    }
+
+    .title .accent {
+      display: inline-block;
+      color: var(--cyan);
+      text-shadow: 0 0 14px rgba(113,255,226,.35);
+    }
+
+    .title .name {
+      display: inline-block;
+      color: white;
+      position: relative;
+    }
+
+    .title .name::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: .06em;
+      width: 100%;
+      height: .18em;
+      background: linear-gradient(90deg, var(--cyan), var(--lime));
+      opacity: .18;
+      border-radius: 10px;
+    }
+
+    .sub {
+      margin: 0;
+      font-size: clamp(1rem, 1.45vw, 1.24rem);
+      color: var(--muted);
+      max-width: 42ch;
+      opacity: 0;
+      animation: rise .6s ease forwards .48s;
+    }
+
+    .sub strong {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .bar {
+      margin-top: 8px;
+      width: min(420px, 100%);
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(113,255,226,.14);
+      overflow: hidden;
+      opacity: 0;
+      animation: rise .6s ease forwards .62s;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, var(--cyan), var(--lime), var(--cyan));
+      background-size: 200% 100%;
+      box-shadow: 0 0 16px rgba(113,255,226,.34);
+      animation: loadBar 3s linear infinite;
+      transform-origin: left center;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 2px;
+      opacity: 0;
+      animation: rise .6s ease forwards .75s;
+    }
+
+    .chip {
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      color: #d8fff2;
+      font-size: .84rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      backdrop-filter: blur(10px);
+    }
+
+    .corner {
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      pointer-events: none;
+      opacity: .7;
+    }
+
+    .corner.tl {
+      top: 10px;
+      left: 10px;
+      border-top: 2px solid rgba(113,255,226,.3);
+      border-left: 2px solid rgba(113,255,226,.3);
+      border-top-left-radius: 20px;
+    }
+
+    .corner.br {
+      right: 10px;
+      bottom: 10px;
+      border-right: 2px solid rgba(169,139,255,.28);
+      border-bottom: 2px solid rgba(169,139,255,.28);
+      border-bottom-right-radius: 20px;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes badgeIn {
+      from { opacity: 0; transform: rotate(-10deg) scale(.8); }
+      to { opacity: 1; transform: rotate(-6deg) scale(1); }
+    }
+
+    @keyframes badgeFloat {
+      0%,100% { transform: rotate(-6deg) translateY(0); }
+      50% { transform: rotate(-4deg) translateY(-7px); }
+    }
+
+    @keyframes pulseOut {
+      0% { transform: scale(.86); opacity: .72; }
+      100% { transform: scale(1.12); opacity: 0; }
+    }
+
+    @keyframes scanSweep {
+      0% { transform: translateX(-120%); }
+      100% { transform: translateX(120%); }
+    }
+
+    @keyframes gridDrift {
+      from { transform: perspective(800px) rotateX(68deg) translateY(30%) translateX(0); }
+      to { transform: perspective(800px) rotateX(68deg) translateY(30%) translateX(-34px); }
+    }
+
+    @keyframes grainShift {
+      0% { transform: translate(0,0); }
+      50% { transform: translate(-1%, 1%); }
+      100% { transform: translate(1%, -1%); }
+    }
+
+    @keyframes orbFloat {
+      0%,100% { transform: translateY(0) translateX(0); }
+      50% { transform: translateY(-12px) translateX(8px); }
+    }
+
+    @keyframes loadBar {
+      0% { background-position: 0% 50%; transform: scaleX(.08); }
+      15% { transform: scaleX(.42); }
+      55% { transform: scaleX(.88); }
+      100% { background-position: 200% 50%; transform: scaleX(1); }
+    }
+
+    @keyframes blink {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .45; transform: scale(.7); }
+    }
+
+    @media (max-width: 720px) {
+      .alert {
+        grid-template-columns: 1fr;
+        width: 94vw;
+        padding: 18px;
+        gap: 10px;
+      }
+
+      .left {
+        min-height: auto;
+        justify-content: start;
+      }
+
+      .avatar-core {
+        width: 112px;
+        height: 112px;
+        border-radius: 24px;
+      }
+
+      .dog-icon {
+        width: 70px;
+        height: 70px;
+      }
+
+      .chips {
+        gap: 8px;
+      }
+
+      .chip {
+        font-size: .75rem;
+        padding: 8px 10px;
+      }
+    }
+
+    /* helper class for Twitch browser source testing */
+    .hidden-ui {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <main class="alert-wrap" role="img" aria-label="New follower alert for synthdog with futuristic synthwave cyber aesthetic">
+    <div class="ambient" aria-hidden="true">
+      <div class="orbs"></div>
+      <div class="grid"></div>
+      <div class="pulse"></div>
+      <div class="scan"></div>
+      <div class="grain"></div>
+    </div>
+
+    <section class="alert" aria-live="polite">
+      <span class="corner tl"></span>
+      <span class="corner br"></span>
+
+      <div class="left">
+        <div class="avatar-core">
+          <svg class="dog-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+              <linearGradient id="g1" x1="12" y1="14" x2="86" y2="86" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#71FFE2"/>
+                <stop offset="0.5" stop-color="#D9FF59"/>
+                <stop offset="1" stop-color="#A98BFF"/>
+              </linearGradient>
+            </defs>
+            <path d="M28 34L20 22L33 26L40 18L48 29H52L60 18L67 26L80 22L72 34L74 57C74 70 64 80 50 80C36 80 26 70 26 57L28 34Z" stroke="url(#g1)" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M37 51C39.2091 51 41 49.2091 41 47C41 44.7909 39.2091 43 37 43C34.7909 43 33 44.7909 33 47C33 49.2091 34.7909 51 37 51Z" fill="#71FFE2"/>
+            <path d="M63 51C65.2091 51 67 49.2091 67 47C67 44.7909 65.2091 43 63 43C60.7909 43 59 44.7909 59 47C59 49.2091 60.7909 51 63 51Z" fill="#71FFE2"/>
+            <path d="M44 61C47.5 64 52.5 64 56 61" stroke="#D9FF59" stroke-width="4" stroke-linecap="round"/>
+            <path d="M50 52L46 58H54L50 52Z" fill="#A98BFF"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="right">
+        <div class="kicker">
+          <span class="dot"></span>
+          <span>New follower detected</span>
+        </div>
+
+        <h1 class="title">
+          <span class="accent">synthdog</span>
+          <span class="name">just followed</span>
+        </h1>
+
+        <p class="sub">
+          Signal locked. Community growth rising for <strong>@synthdog</strong>.
+        </p>
+
+        <div class="bar" aria-hidden="true">
+          <span></span>
+        </div>
+
+        <div class="chips" aria-hidden="true">
+          <span class="chip">cyber pup online</span>
+          <span class="chip">fresh signal</span>
+          <span class="chip">stream boosted</span>
+        </div>
+      </div>
+    </section>
+
+    <p class="hidden-ui">Follower alert active for synthdog.</p>
+  </main>
+
+  <script>
+    // Optional lightweight replay for browser-source testing
+    const alertEl = document.querySelector('.alert');
+    function replayAlert() {
+      const animated = document.querySelectorAll('.kicker, .title, .sub, .bar, .chips, .avatar-core');
+      animated.forEach(el => {
+        el.style.animation = 'none';
+        void el.offsetWidth;
+        el.style.animation = '';
+      });
+    }
+
+    // Double click anywhere to replay in testing environments
+    document.addEventListener('dblclick', replayAlert);
+
+    // Expose replay helper for console/manual triggers in Twitch alert editor
+    window.replayFollowerAlert = replayAlert;
+  </script>
+</body>
+</html>
